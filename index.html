@@ -114,7 +114,7 @@
 
     <div id="loader">
         <div class="spinner"></div>
-        <h3 style="color: var(--primary);">Connecting to Database...</h3>
+        <h3 style="color: var(--primary);">Syncing Live Database...</h3>
     </div>
 
     <div id="landing-screen" class="hidden">
@@ -143,7 +143,7 @@
         <nav>
             <h2 id="ui-nav-title">🎬 The Hub</h2>
             <div class="nav-actions">
-                <button class="btn-sync" onclick="fetchCloudData(true)"><i class="fas fa-sync-alt"></i> Check Updates</button>
+                <button class="btn-sync" onclick="fetchCloudData(true)"><i class="fas fa-sync-alt"></i> Refresh</button>
                 <button class="btn btn-outline" style="width: auto; padding: 0.5rem 1rem; border-radius: 20px;" onclick="goHome()"><i class="fas fa-arrow-left"></i> Home</button>
             </div>
         </nav>
@@ -169,6 +169,7 @@
                 <div class="cloud-header">
                     <span id="ui-comment-title"><i class="fas fa-robot"></i> HubBot</span>
                     <div>
+                        <i class="fas fa-sync-alt" style="cursor: pointer; color: var(--primary); margin-right: 15px;" onclick="fetchCloudData(true)" title="Refresh Chat"></i>
                         <i class="fas fa-times" style="cursor: pointer; color: var(--text-muted);" onclick="toggleBotCloud()"></i>
                     </div>
                 </div>
@@ -178,7 +179,6 @@
                     <button class="btn btn-main" onclick="submitRequest()"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
-
             <svg class="robot-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" onclick="toggleBotCloud()">
                 <line x1="50" y1="10" x2="50" y2="20" stroke="var(--primary)" stroke-width="4"/>
                 <circle cx="50" cy="10" r="6" fill="var(--danger)"><animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite" /></circle>
@@ -201,6 +201,7 @@
             <div class="nav-item" id="nav-robot" onclick="switchAdminPage('robot')"><i class="fas fa-robot"></i> Robo Assistant</div>
             <div class="nav-item" id="nav-settings" onclick="switchAdminPage('settings')"><i class="fas fa-paint-brush"></i> Site Settings</div>
             <div style="flex:1;"></div>
+            <div class="nav-item" style="color: var(--primary); border-top: 1px solid var(--surface-light); margin-top: auto;" onclick="fetchCloudData(true)"><i class="fas fa-sync-alt"></i> Sync Data</div>
             <div class="nav-item" style="color: var(--danger);" onclick="goHome()"><i class="fas fa-sign-out-alt"></i> Logout</div>
         </aside>
 
@@ -215,10 +216,10 @@
                     <input type="text" id="movie-title" placeholder="Title">
                     <input type="url" id="movie-poster" placeholder="Poster Image URL">
                     <input type="url" id="movie-link" placeholder="Download Link (Leave blank for Serials)">
-                    <button class="btn btn-main" onclick="savePost()"><i class="fas fa-upload"></i> Publish to Site</button>
+                    <button class="btn btn-main" onclick="savePost()"><i class="fas fa-upload"></i> Publish to Live Site</button>
                 </div>
                 
-                <h2 style="margin: 3rem 0 1rem;">Uploaded Database</h2>
+                <h2 style="margin: 3rem 0 1rem;">Live Database</h2>
                 <div class="tabs" style="justify-content: flex-start;">
                     <button class="tab-btn active" id="admin-subtab-movie" onclick="switchAdminContentTab('Movie')">🎬 Movies</button>
                     <button class="tab-btn" id="admin-subtab-serial" onclick="switchAdminContentTab('Serial')">📺 Serials</button>
@@ -255,6 +256,7 @@
                                 <option value="'Inter', sans-serif">Modern</option>
                                 <option value="'Poppins', sans-serif">Round</option>
                                 <option value="'Roboto', sans-serif">Clean</option>
+                                <option value="'Courier Prime', monospace">Hacker / Retro</option>
                             </select>
                         </div>
                     </div>
@@ -297,17 +299,17 @@
         </main>
     </div>
 
-    <footer id="ui-footer">Made with code and logic.</footer>
-
     <script>
         // =========================================================================
-        // 🌩️ JSONBIN API CONNECTION
+        // 🌩️ YOUR HARDCODED JSONBIN CLOUD CONNECTION 
         // =========================================================================
-        const BIN_ID = "YOUR_BIN_ID_HERE";
-        const API_KEY = "YOUR_API_KEY_HERE";
+        const BIN_ID = "69b2962fb7ec241ddc6115dc";
+        const API_KEY = "$2a$10$NjVJodrR46mvAUoYLzkjqOCaR6IxrOLWBbi5MWh1i3BEDI04wvuWW";
         const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
         const ADMIN_PASSWORD = "rudra"; 
+        
+        // Data Storage
         let globalData = { posts: [], chat: [], settings: {} };
         let posts = [];
         let chatHistory = [];
@@ -324,15 +326,34 @@
         };
         let siteSettings = defSettings;
 
-        // --- FETCH DATA FROM CLOUD (WITH CACHE-BUSTING) ---
-        // isSilent = false means show the loading screen. isSilent = true means hide it for background syncs.
+        // --- DOUBLE SAFETY NET (Load local backup first so screen is never blank) ---
+        function loadLocalBackup() {
+            let local = localStorage.getItem('rudra_live_backup');
+            if(local) {
+                let parsed = JSON.parse(local);
+                posts = parsed.posts || [];
+                chatHistory = parsed.chat || [];
+                siteSettings = parsed.settings || defSettings;
+                applySettingsToUI();
+            }
+        }
+
+        // --- FETCH DATA FROM CLOUD (WITH AGGRESSIVE CACHE-BUSTING) ---
         async function fetchCloudData(showLoader = true) {
             if(showLoader) document.getElementById('loader').style.display = 'flex';
+            
             try {
-                // The ?req=Date.now() forces the browser to bypass cache and grab fresh data!
-                const response = await fetch(BIN_URL + '?req=' + Date.now(), { 
-                    headers: { 'X-Master-Key': API_KEY, 'Cache-Control': 'no-cache' } 
+                // By adding /latest and a random timestamp (?req=Date.now()), we FORCE the browser to download the absolute newest version.
+                const response = await fetch(`${BIN_URL}/latest?req=${Date.now()}`, { 
+                    headers: { 
+                        'X-Master-Key': API_KEY, 
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    } 
                 });
+                
+                if (!response.ok) throw new Error("Cloud fetch failed");
                 const result = await response.json();
                 
                 if (result.record) {
@@ -340,6 +361,9 @@
                     posts = globalData.posts || [];
                     chatHistory = globalData.chat || [];
                     siteSettings = Object.keys(globalData.settings || {}).length === 0 ? defSettings : globalData.settings;
+                    
+                    // Update Safety Net
+                    localStorage.setItem('rudra_live_backup', JSON.stringify(globalData));
                 }
                 
                 applySettingsToUI();
@@ -354,7 +378,9 @@
                 }
                 
             } catch (error) {
-                console.error("Error connecting to cloud database.", error);
+                console.error("Cloud fetch error:", error);
+                // If cloud fails, fallback to local so the screen doesn't break
+                loadLocalBackup(); 
             } finally {
                 if(showLoader) document.getElementById('loader').style.display = 'none';
                 if(currentRole === 'guest') document.getElementById('landing-screen').classList.remove('hidden');
@@ -363,32 +389,45 @@
 
         // --- PUSH DATA TO CLOUD ---
         async function saveToCloud() {
+            document.getElementById('loader').style.display = 'flex';
+            document.querySelector('.spinner').style.display = 'none';
+            document.querySelector('#loader h3').innerText = "Publishing to Live Site...";
+
             globalData.posts = posts;
             globalData.chat = chatHistory;
             globalData.settings = siteSettings;
             
+            // Double save: save locally first as backup
+            localStorage.setItem('rudra_live_backup', JSON.stringify(globalData));
+
             try {
-                await fetch(BIN_URL, {
+                const response = await fetch(BIN_URL, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'X-Master-Key': API_KEY 
+                    },
                     body: JSON.stringify(globalData)
                 });
+                
+                if (!response.ok) throw new Error("Failed to save");
+                
+                document.getElementById('loader').style.display = 'none';
+                document.querySelector('.spinner').style.display = 'block';
+                return true;
             } catch (error) {
-                console.error("Failed to save to cloud.", error);
-                alert("Failed to sync with cloud. Check internet connection.");
+                console.error("Save error:", error);
+                document.getElementById('loader').style.display = 'none';
+                document.querySelector('.spinner').style.display = 'block';
+                alert("⚠️ Cloud Save Failed! Check your internet connection.");
+                return false;
             }
         }
 
-        // --- AUTO-SYNC MAGIC ---
+        // Initialize App
         window.onload = () => {
-            fetchCloudData(true); // Initial fetch on load
-            
-            // SILENT BACKGROUND SYNC: Checks for updates every 60 seconds automatically!
-            setInterval(() => {
-                if (currentRole !== 'guest') {
-                    fetchCloudData(false); // false = silent fetch, no loading screen
-                }
-            }, 60000); 
+            loadLocalBackup(); // Load fast local data first so UI isn't empty
+            fetchCloudData(true); // Then immediately check cloud for updates
         };
 
         // --- APPLY SETTINGS ---
@@ -475,8 +514,7 @@
                 showComments: document.getElementById('set-show-comments').checked, commentTitle: document.getElementById('set-comment-title').value
             };
             applySettingsToUI();
-            await saveToCloud();
-            alert("Settings Saved to Cloud!");
+            if(await saveToCloud()) alert("✅ Settings successfully updated on live site!");
         }
 
         // --- CONTENT MANAGEMENT ---
@@ -504,17 +542,20 @@
             if (!title) return alert("Title required!");
             
             posts.unshift({ id: Date.now(), title, type, poster, link: link || '', episodes: [] });
-            await saveToCloud();
             
-            document.getElementById('movie-title').value = ''; document.getElementById('movie-poster').value = ''; document.getElementById('movie-link').value = '';
-            switchAdminContentTab(type);
+            if(await saveToCloud()) {
+                document.getElementById('movie-title').value = ''; document.getElementById('movie-poster').value = ''; document.getElementById('movie-link').value = '';
+                switchAdminContentTab(type);
+                alert("✅ Successfully published to the live site!");
+            }
         }
 
         async function deletePost(id) { 
-            if(confirm("Delete this?")) { 
+            if(confirm("Delete this entirely?")) { 
                 posts = posts.filter(p => p.id !== id); 
-                await saveToCloud();
-                renderAdminGrid(); 
+                if(await saveToCloud()) {
+                    renderAdminGrid(); 
+                }
             } 
         }
 
@@ -616,7 +657,7 @@
         
         function renderAdminChat() { 
             const body = document.getElementById('admin-chat-body');
-            let html = `<div class="chat-bubble bot-msg" style="border-radius: 12px;">Master Admin, here is the chat log. Type below to send a message back.</div>`;
+            let html = `<div class="chat-bubble bot-msg" style="border-radius: 12px;">Master Admin, here is the chat log.</div>`;
             html += chatHistory.map(msg => `<div class="chat-bubble ${msg.sender === 'admin' ? 'user-msg' : 'bot-msg'}"><b>${msg.sender === 'admin' ? 'You' : 'Friend'}:</b><br>${msg.text}</div>`).join('');
             html += `<div class="cloud-input" style="border: none; padding: 1rem 0 0 0;"><input type="text" id="admin-reply-input" placeholder="Type reply to friend..." style="margin:0;"><button class="btn btn-main" onclick="submitAdminReply()"><i class="fas fa-paper-plane"></i></button></div>`;
             body.innerHTML = html; body.scrollTop = body.scrollHeight;
