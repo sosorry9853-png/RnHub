@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="meta-title">Rudra's Movie Hub</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Poppins:wght@400;600;800&family=Roboto:wght@400;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #0f172a; --surface: #1e293b; --surface-light: rgba(255,255,255,0.1); 
+            --primary: #3b82f6; --text: #f8fafc; --text-muted: #94a3b8; 
+            --danger: #ef4444; --movie-btn: #3b82f6; --serial-btn: #10b981;
+            --site-font: 'Inter', sans-serif;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--site-font); }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; background-size: cover; background-position: center; background-attachment: fixed; overflow-x: hidden; }
+        .hidden { display: none !important; }
+
+        input[type="text"], input[type="url"], input[type="password"], select { width: 100%; padding: 0.8rem; margin: 0.5rem 0 1rem; border-radius: 8px; border: 1px solid var(--surface-light); background: rgba(0,0,0,0.5); color: var(--text); backdrop-filter: blur(5px); }
+        input[type="color"] { width: 100%; height: 40px; padding: 0.2rem; margin: 0.5rem 0 1rem; border-radius: 8px; border: none; background: var(--surface-light); cursor: pointer; }
+        
+        .btn { width: 100%; padding: 1rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s; text-align: center; }
+        .btn-main { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .btn-main:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); }
+        .btn-sync { background: var(--surface-light); color: var(--text); border: none; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-sync:hover { background: var(--primary); color: white; }
+
+        #landing-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); }
+        .hero-box { max-width: 500px; width: 100%; padding: 2rem; }
+        .hero-box h1 { font-size: 3.5rem; margin-bottom: 1rem; color: var(--primary); text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .secret-admin { position: absolute; bottom: 10px; right: 10px; color: rgba(255,255,255,0.05); cursor: pointer; padding: 15px; z-index: 100; }
+        .secret-admin:hover { color: rgba(255,255,255,0.3); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(10px); }
+        .modal-box { background: var(--surface); padding: 2.5rem; border-radius: 16px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 1px solid var(--surface-light); }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem; width: 100%; flex: 1; }
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--surface-light); margin-bottom: 2rem; }
+        .nav-actions { display: flex; gap: 10px; }
+        .timer-banner { background: rgba(0,0,0,0.4); border: 1px solid var(--primary); padding: 1.5rem; border-radius: 12px; text-align: center; margin-bottom: 2rem; backdrop-filter: blur(5px); }
+        
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 2px solid var(--surface-light); padding-bottom: 1rem; flex-wrap: wrap; justify-content: center; }
+        .tab-btn { background: var(--surface); color: var(--text-muted); border: none; font-size: 1rem; font-weight: bold; cursor: pointer; padding: 0.8rem 2rem; border-radius: 30px; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+
+        .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+        .card { position: relative; background: var(--surface); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; border: 1px solid var(--surface-light); box-shadow: 0 8px 20px rgba(0,0,0,0.3); transition: 0.3s; }
+        .card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.6); border-color: var(--primary); }
+        .img-container { position: relative; width: 100%; height: 320px; overflow: hidden; }
+        .card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s ease; }
+        .card:hover img { transform: scale(1.08); }
+        .card-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 60%; background: linear-gradient(to top, var(--surface) 0%, transparent 100%); pointer-events: none; }
+        .card-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; backdrop-filter: blur(5px); border: 1px solid var(--surface-light); }
+        .card-body { padding: 1.2rem; flex: 1; display: flex; flex-direction: column; z-index: 2; background: var(--surface); }
+        .card-title { font-size: 1.1rem; margin-bottom: 1rem; line-height: 1.3; }
+        .btn-card-action { color: white; text-decoration: none; padding: 0.8rem; border-radius: 8px; text-align: center; margin-top: auto; font-weight: bold; display: block; cursor: pointer; border: none; transition: 0.2s; }
+
+        .floating-bot-wrapper { position: fixed; top: 80px; right: 20px; z-index: 1000; display: flex; align-items: flex-start; gap: 15px; pointer-events: none; }
+        .floating-bot-wrapper > * { pointer-events: auto; }
+        .robot-avatar { width: 80px; height: 80px; animation: floatRobot 3s ease-in-out infinite, glowRobot 2s infinite alternate; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); cursor: pointer; }
+        @keyframes floatRobot { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-10px) rotate(5deg); } 100% { transform: translateY(0px) rotate(0deg); } }
+        @keyframes glowRobot { from { filter: drop-shadow(0 0 5px var(--primary)); } to { filter: drop-shadow(0 0 20px var(--primary)); } }
+
+        .speech-cloud { background: rgba(30, 41, 59, 0.95); border: 2px solid var(--primary); border-radius: 24px; border-top-right-radius: 0; width: 300px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); display: flex; flex-direction: column; position: relative; backdrop-filter: blur(10px); }
+        .speech-cloud::before { content: ''; position: absolute; top: -2px; right: -15px; border-width: 15px 0 0 15px; border-style: solid; border-color: var(--primary) transparent transparent transparent; }
+        .speech-cloud::after { content: ''; position: absolute; top: 0px; right: -10px; border-width: 12px 0 0 12px; border-style: solid; border-color: rgba(30, 41, 59, 0.95) transparent transparent transparent; }
+        .cloud-header { padding: 15px; border-bottom: 1px solid var(--surface-light); font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
+        .cloud-body { padding: 15px; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; }
+        .chat-bubble { max-width: 90%; padding: 10px 15px; border-radius: 12px; line-height: 1.4; }
+        .bot-msg { background: rgba(0,0,0,0.4); color: var(--text); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid var(--surface-light); }
+        .user-msg { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .admin-msg { background: var(--serial-btn); color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .cloud-input { display: flex; gap: 0.5rem; padding: 15px; border-top: 1px solid var(--surface-light); }
+        .cloud-input input { margin: 0; flex: 1; border-radius: 20px; padding: 0.6rem 1rem; font-size: 0.9rem; }
+        .cloud-input button { width: 40px; height: 40px; border-radius: 50%; padding: 0; display: flex; justify-content: center; align-items: center; }
+
+        @media(max-width: 768px) {
+            .floating-bot-wrapper { top: auto; bottom: 20px; right: 10px; flex-direction: column-reverse; align-items: flex-end; }
+            .speech-cloud { border-radius: 24px; border-bottom-right-radius: 0; }
+            .speech-cloud::before { top: auto; bottom: -2px; right: -15px; border-width: 0 0 15px 15px; }
+            .speech-cloud::after { top: auto; bottom: 0px; right: -10px; border-width: 0 0 12px 12px; }
+        }
+
+        .admin-layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: var(--surface); border-right: 1px solid var(--surface-light); display: flex; flex-direction: column; padding: 1.5rem 0; z-index: 100; }
+        .sidebar-brand { padding: 0 1.5rem 2rem; font-size: 1.2rem; font-weight: bold; color: var(--primary); border-bottom: 1px solid var(--surface-light); margin-bottom: 1rem; text-align: center;}
+        .nav-item { padding: 1rem 1.5rem; color: var(--text-muted); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.05); color: var(--primary); border-left: 4px solid var(--primary); }
+        .admin-content-area { flex: 1; padding: 2rem 3rem; overflow-y: auto; height: 100vh; position: relative; }
+        
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media(max-width: 768px) { .admin-layout { flex-direction: column; } .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; padding: 1rem; } .nav-item { padding: 0.5rem; border: none !important; } .admin-content-area { padding: 1rem; height: auto; } .settings-grid { grid-template-columns: 1fr; } }
+        .setting-box { background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--surface-light); margin-bottom: 1.5rem; }
+        .setting-box h4 { margin-bottom: 1.5rem; color: var(--primary); border-bottom: 1px solid var(--surface-light); padding-bottom: 0.5rem; }
+        .setting-group { margin-bottom: 1rem; }
+        .setting-group label { display: block; margin-bottom: 0.3rem; font-size: 0.9rem; color: var(--text-muted); }
+        .toggle-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; margin-bottom: 1rem; }
+        .toggle-label input { width: 20px; height: 20px; cursor: pointer; }
+
+        footer { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.9rem; background: var(--surface); border-top: 1px solid var(--surface-light); }
+        
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; transition: 0.3s; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <h3 style="color: var(--primary);">Connecting to Database...</h3>
+    </div>
+
+    <div id="landing-screen" class="hidden">
+        <div class="hero-box">
+            <h1 id="ui-hero-title">🎬 The Hub</h1>
+            <p id="ui-hero-sub" style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.2rem;">Your daily dose of movies and serials.</p>
+            <button class="btn btn-main" style="padding: 1.2rem; font-size: 1.1rem; border-radius: 30px;" onclick="showUserView()"><i class="fas fa-play"></i> Enter Site</button>
+        </div>
+        <div class="secret-admin" onclick="openLogin()"><i class="fas fa-lock"></i></div>
+    </div>
+
+    <div id="login-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="text-align: center; max-width: 350px;">
+            <h2 style="margin-bottom: 1rem; color: var(--primary);"><i class="fas fa-shield-alt"></i> Admin</h2>
+            <input type="password" id="username" placeholder="Enter Password...">
+            <button class="btn btn-main" onclick="attemptLogin()" style="margin-bottom: 10px;">Login</button>
+            <button class="btn btn-outline" onclick="closeLogin()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="episodes-modal" class="modal-overlay hidden">
+        <div class="modal-box" id="episodes-content"></div>
+    </div>
+
+    <div id="user-screen" class="container hidden">
+        <nav>
+            <h2 id="ui-nav-title">🎬 The Hub</h2>
+            <div class="nav-actions">
+                <button class="btn-sync" onclick="fetchCloudData(true)"><i class="fas fa-sync-alt"></i> Check Updates</button>
+                <button class="btn btn-outline" style="width: auto; padding: 0.5rem 1rem; border-radius: 20px;" onclick="goHome()"><i class="fas fa-arrow-left"></i> Home</button>
+            </div>
+        </nav>
+
+        <div id="ui-timer-section" class="timer-banner">
+            <h3 id="ui-timer-title" style="color: var(--primary); margin-bottom: 10px;">⏳ Next Big Update In:</h3>
+            <h1 id="countdown-text" style="font-size: 2.5rem; letter-spacing: 2px;">Loading...</h1>
+        </div>
+
+        <div id="search-container" class="hidden">
+            <input type="text" id="user-search" placeholder="Search content..." oninput="filterUserContent()" style="border-radius: 30px; padding: 1rem 1.5rem;">
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-movie-user" onclick="switchUserTab('Movie')">Movies</button>
+            <button class="tab-btn" id="tab-serial-user" onclick="switchUserTab('Serial')">Serials</button>
+        </div>
+
+        <div class="movie-grid" id="user-grid"></div>
+
+        <div id="floating-bot-widget" class="floating-bot-wrapper hidden">
+            <div class="speech-cloud" id="bot-speech-cloud">
+                <div class="cloud-header">
+                    <span id="ui-comment-title"><i class="fas fa-robot"></i> HubBot</span>
+                    <div>
+                        <i class="fas fa-times" style="cursor: pointer; color: var(--text-muted);" onclick="toggleBotCloud()"></i>
+                    </div>
+                </div>
+                <div class="cloud-body" id="user-chat-body"></div>
+                <div class="cloud-input">
+                    <input type="text" id="user-request" placeholder="Ask for a movie...">
+                    <button class="btn btn-main" onclick="submitRequest()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <svg class="robot-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" onclick="toggleBotCloud()">
+                <line x1="50" y1="10" x2="50" y2="20" stroke="var(--primary)" stroke-width="4"/>
+                <circle cx="50" cy="10" r="6" fill="var(--danger)"><animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite" /></circle>
+                <rect x="20" y="20" width="60" height="45" rx="15" fill="var(--primary)"/>
+                <circle cx="35" cy="38" r="6" fill="white"/><circle cx="65" cy="38" r="6" fill="white"/>
+                <circle cx="35" cy="38" r="2" fill="black"/><circle cx="65" cy="38" r="2" fill="black"/>
+                <path d="M 30 52 Q 50 65 70 52" stroke="white" stroke-width="4" fill="transparent" stroke-linecap="round"/>
+                <rect x="35" y="70" width="30" height="20" rx="5" fill="var(--primary)"/><rect x="45" y="65" width="10" height="5" fill="#94a3b8"/>
+                <rect x="15" y="75" width="10" height="25" rx="5" fill="#94a3b8" transform="rotate(30 20 75)"><animateTransform attributeName="transform" type="rotate" values="30 20 75; 50 20 75; 30 20 75" dur="2s" repeatCount="indefinite" /></rect>
+                <rect x="75" y="75" width="10" height="25" rx="5" fill="#94a3b8" transform="rotate(-30 80 75)"><animateTransform attributeName="transform" type="rotate" values="-30 80 75; -50 80 75; -30 80 75" dur="2s" repeatCount="indefinite" /></rect>
+                <rect x="40" y="90" width="8" height="10" rx="4" fill="#94a3b8"/><rect x="52" y="90" width="8" height="10" rx="4" fill="#94a3b8"/>
+            </svg>
+        </div>
+    </div>
+
+    <div id="admin-screen" class="admin-layout hidden">
+        <aside class="sidebar">
+            <div class="sidebar-brand"><i class="fas fa-cog"></i> Control Panel</div>
+            <div class="nav-item active" id="nav-content" onclick="switchAdminPage('content')"><i class="fas fa-film"></i> Manage Content</div>
+            <div class="nav-item" id="nav-robot" onclick="switchAdminPage('robot')"><i class="fas fa-robot"></i> Robo Assistant</div>
+            <div class="nav-item" id="nav-settings" onclick="switchAdminPage('settings')"><i class="fas fa-paint-brush"></i> Site Settings</div>
+            <div style="flex:1;"></div>
+            <div class="nav-item" style="color: var(--danger);" onclick="goHome()"><i class="fas fa-sign-out-alt"></i> Logout</div>
+        </aside>
+
+        <main class="admin-content-area">
+            <div id="admin-page-content">
+                <h2 style="margin-bottom: 2rem;">Publish Content</h2>
+                <div class="setting-box" style="border-color: var(--primary);">
+                    <select id="movie-type" onchange="toggleLinkInput()">
+                        <option value="Movie">Movie (Direct Link)</option>
+                        <option value="Serial">Serial (Multiple Episodes)</option>
+                    </select>
+                    <input type="text" id="movie-title" placeholder="Title">
+                    <input type="url" id="movie-poster" placeholder="Poster Image URL">
+                    <input type="url" id="movie-link" placeholder="Download Link (Leave blank for Serials)">
+                    <button class="btn btn-main" onclick="savePost()"><i class="fas fa-upload"></i> Publish to Site</button>
+                </div>
+                
+                <h2 style="margin: 3rem 0 1rem;">Uploaded Database</h2>
+                <div class="tabs" style="justify-content: flex-start;">
+                    <button class="tab-btn active" id="admin-subtab-movie" onclick="switchAdminContentTab('Movie')">🎬 Movies</button>
+                    <button class="tab-btn" id="admin-subtab-serial" onclick="switchAdminContentTab('Serial')">📺 Serials</button>
+                </div>
+                <div class="movie-grid" id="admin-grid-dynamic"></div>
+            </div>
+
+            <div id="admin-page-robot" class="hidden">
+                <h2 style="margin-bottom: 2rem;">Robo Assistant Terminal</h2>
+                <button class="btn btn-danger" style="width: auto; margin-bottom: 1rem;" onclick="clearRequests()"><i class="fas fa-trash"></i> Clear Logs</button>
+                <div class="setting-box" style="height: 60vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+                    <div style="background: var(--surface); padding: 1rem 1.5rem; font-weight: bold; border-bottom: 1px solid var(--surface-light); display: flex; align-items: center; justify-content: space-between;">
+                        <div><i class="fas fa-robot" style="color: var(--primary); font-size: 1.5rem; margin-right: 10px;"></i> System Chat Log</div>
+                    </div>
+                    <div class="cloud-body" id="admin-chat-body" style="flex: 1; padding: 1.5rem; max-height: none;"></div>
+                </div>
+            </div>
+
+            <div id="admin-page-settings" class="hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Site Customization</h2>
+                    <button class="btn btn-main" style="width:auto; padding: 0.8rem 1.5rem; border-radius: 30px;" onclick="saveSiteSettings()">💾 Save Changes</button>
+                </div>
+                
+                <div class="setting-box">
+                    <h4>📝 Global Text & Branding</h4>
+                    <div class="settings-grid">
+                        <div class="setting-group"><label>Website Title</label><input type="text" id="set-title"></div>
+                        <div class="setting-group"><label>Welcome Subtitle</label><input type="text" id="set-sub"></div>
+                        <div class="setting-group"><label>Footer Message</label><input type="text" id="set-footer"></div>
+                        <div class="setting-group">
+                            <label>Website Font</label>
+                            <select id="set-font">
+                                <option value="'Inter', sans-serif">Modern</option>
+                                <option value="'Poppins', sans-serif">Round</option>
+                                <option value="'Roboto', sans-serif">Clean</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-box">
+                        <h4>🎬 Movies Tab</h4>
+                        <div class="setting-group"><label>Tab Name</label><input type="text" id="set-movie-tab"></div>
+                        <div class="setting-group"><label>Button Text</label><input type="text" id="set-movie-btn-text"></div>
+                        <div class="setting-group"><label>Button Color</label><input type="color" id="set-movie-color"></div>
+                    </div>
+                    <div class="setting-box">
+                        <h4>📺 Serials Tab</h4>
+                        <div class="setting-group"><label>Tab Name</label><input type="text" id="set-serial-tab"></div>
+                        <div class="setting-group"><label>Button Text</label><input type="text" id="set-serial-btn-text"></div>
+                        <div class="setting-group"><label>Episode Text</label><input type="text" id="set-ep-btn-text"></div>
+                        <div class="setting-group"><label>Button Color</label><input type="color" id="set-serial-color"></div>
+                    </div>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="setting-box">
+                        <h4>🎨 Colors</h4>
+                        <div class="setting-group"><label>Main Theme</label><input type="color" id="set-color-primary"></div>
+                        <div class="setting-group"><label>Background</label><input type="color" id="set-color-bg"></div>
+                        <div class="setting-group"><label>Cards</label><input type="color" id="set-color-surface"></div>
+                        <div class="setting-group"><label>Image BG URL</label><input type="text" id="set-bg-image"></div>
+                    </div>
+                    <div class="setting-box">
+                        <h4>⚙️ Toggles</h4>
+                        <label class="toggle-label"><input type="checkbox" id="set-show-search"> Enable Search</label>
+                        <label class="toggle-label"><input type="checkbox" id="set-show-timer"> Enable Timer</label>
+                        <div class="setting-group"><label>Timer Title</label><input type="text" id="set-timer-title"></div>
+                        <label class="toggle-label"><input type="checkbox" id="set-show-comments"> Enable Robo Chat</label>
+                        <div class="setting-group"><label>Robo Name</label><input type="text" id="set-comment-title"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer id="ui-footer">Made with code and logic.</footer>
+
+    <script>
+        // =========================================================================
+        // 🌩️ JSONBIN API CONNECTION
+        // =========================================================================
+        const BIN_ID = "YOUR_BIN_ID_HERE";
+        const API_KEY = "YOUR_API_KEY_HERE";
+        const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+        const ADMIN_PASSWORD = "rudra"; 
+        let globalData = { posts: [], chat: [], settings: {} };
+        let posts = [];
+        let chatHistory = [];
+        let currentMode = 'Movie'; 
+        let adminContentMode = 'Movie';
+        let currentRole = 'guest';
+
+        let defSettings = {
+            title: "🎬 The Hub", subtitle: "Your daily dose of movies and serials.", footer: "Links updated regularly.", font: "'Inter', sans-serif",
+            movieTabName: "Movies", movieBtnText: "Download Movie", movieColor: "#3b82f6",
+            serialTabName: "Serials", serialBtnText: "View Episodes", epBtnText: "Get Episode", serialColor: "#10b981",
+            colorPrimary: "#3b82f6", colorBg: "#0f172a", colorSurface: "#1e293b", bgImage: "",
+            showSearch: true, showTimer: true, timerTitle: "⏳ Next Update In:", showComments: true, commentTitle: "HubBot"
+        };
+        let siteSettings = defSettings;
+
+        // --- FETCH DATA FROM CLOUD (WITH CACHE-BUSTING) ---
+        // isSilent = false means show the loading screen. isSilent = true means hide it for background syncs.
+        async function fetchCloudData(showLoader = true) {
+            if(showLoader) document.getElementById('loader').style.display = 'flex';
+            try {
+                // The ?req=Date.now() forces the browser to bypass cache and grab fresh data!
+                const response = await fetch(BIN_URL + '?req=' + Date.now(), { 
+                    headers: { 'X-Master-Key': API_KEY, 'Cache-Control': 'no-cache' } 
+                });
+                const result = await response.json();
+                
+                if (result.record) {
+                    globalData = result.record;
+                    posts = globalData.posts || [];
+                    chatHistory = globalData.chat || [];
+                    siteSettings = Object.keys(globalData.settings || {}).length === 0 ? defSettings : globalData.settings;
+                }
+                
+                applySettingsToUI();
+                
+                if(currentRole === 'admin') {
+                    renderAdminGrid();
+                    renderAdminChat();
+                    loadSettingsIntoForm();
+                } else if (currentRole === 'user') {
+                    renderUserGrid();
+                    renderUserChat();
+                }
+                
+            } catch (error) {
+                console.error("Error connecting to cloud database.", error);
+            } finally {
+                if(showLoader) document.getElementById('loader').style.display = 'none';
+                if(currentRole === 'guest') document.getElementById('landing-screen').classList.remove('hidden');
+            }
+        }
+
+        // --- PUSH DATA TO CLOUD ---
+        async function saveToCloud() {
+            globalData.posts = posts;
+            globalData.chat = chatHistory;
+            globalData.settings = siteSettings;
+            
+            try {
+                await fetch(BIN_URL, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+                    body: JSON.stringify(globalData)
+                });
+            } catch (error) {
+                console.error("Failed to save to cloud.", error);
+                alert("Failed to sync with cloud. Check internet connection.");
+            }
+        }
+
+        // --- AUTO-SYNC MAGIC ---
+        window.onload = () => {
+            fetchCloudData(true); // Initial fetch on load
+            
+            // SILENT BACKGROUND SYNC: Checks for updates every 60 seconds automatically!
+            setInterval(() => {
+                if (currentRole !== 'guest') {
+                    fetchCloudData(false); // false = silent fetch, no loading screen
+                }
+            }, 60000); 
+        };
+
+        // --- APPLY SETTINGS ---
+        function applySettingsToUI() {
+            const r = document.documentElement;
+            r.style.setProperty('--primary', siteSettings.colorPrimary); r.style.setProperty('--bg', siteSettings.colorBg);
+            r.style.setProperty('--surface', siteSettings.colorSurface); r.style.setProperty('--movie-btn', siteSettings.movieColor);
+            r.style.setProperty('--serial-btn', siteSettings.serialColor); r.style.setProperty('--site-font', siteSettings.font);
+            document.body.style.backgroundImage = siteSettings.bgImage ? `url(${siteSettings.bgImage})` : 'none';
+
+            document.getElementById('meta-title').innerText = siteSettings.title; document.getElementById('ui-nav-title').innerText = siteSettings.title;
+            document.getElementById('ui-hero-title').innerText = siteSettings.title; document.getElementById('ui-hero-sub').innerText = siteSettings.subtitle;
+            document.getElementById('ui-footer').innerText = siteSettings.footer; document.getElementById('ui-timer-title').innerText = siteSettings.timerTitle;
+            document.getElementById('ui-comment-title').innerHTML = `<i class="fas fa-robot"></i> ${siteSettings.commentTitle}`;
+            document.getElementById('tab-movie-user').innerText = siteSettings.movieTabName; document.getElementById('tab-serial-user').innerText = siteSettings.serialTabName;
+
+            document.getElementById('search-container').style.display = siteSettings.showSearch ? 'block' : 'none';
+            document.getElementById('ui-timer-section').style.display = siteSettings.showTimer ? 'block' : 'none';
+            
+            const botWidget = document.getElementById('floating-bot-widget');
+            if (siteSettings.showComments) botWidget.classList.remove('hidden'); else botWidget.classList.add('hidden');
+        }
+
+        // --- NAVIGATION ---
+        function openLogin() { document.getElementById('login-modal').classList.remove('hidden'); }
+        function closeLogin() { document.getElementById('login-modal').classList.add('hidden'); document.getElementById('username').value = ''; }
+        function goHome() { currentRole = 'guest'; document.getElementById('user-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('landing-screen').classList.remove('hidden'); }
+
+        function showUserView() {
+            currentRole = 'user';
+            document.getElementById('landing-screen').classList.add('hidden');
+            document.getElementById('user-screen').classList.remove('hidden');
+            switchUserTab('Movie');
+            renderUserChat();
+            start4AMTimer();
+        }
+
+        function attemptLogin() {
+            if (document.getElementById('username').value === ADMIN_PASSWORD) {
+                closeLogin();
+                currentRole = 'admin';
+                document.getElementById('landing-screen').classList.add('hidden');
+                document.getElementById('admin-screen').classList.remove('hidden');
+                switchAdminPage('content');
+            } else { alert("Wrong password!"); }
+        }
+
+        function switchAdminPage(pageId) {
+            ['content', 'robot', 'settings'].forEach(id => {
+                document.getElementById(`nav-${id}`).classList.remove('active');
+                document.getElementById(`admin-page-${id}`).classList.add('hidden');
+            });
+            document.getElementById(`nav-${pageId}`).classList.add('active');
+            document.getElementById(`admin-page-${pageId}`).classList.remove('hidden');
+            if(pageId === 'content') switchAdminContentTab(adminContentMode);
+            if(pageId === 'robot') renderAdminChat();
+            if(pageId === 'settings') loadSettingsIntoForm();
+        }
+
+        function loadSettingsIntoForm() {
+            document.getElementById('set-title').value = siteSettings.title; document.getElementById('set-sub').value = siteSettings.subtitle;
+            document.getElementById('set-footer').value = siteSettings.footer; document.getElementById('set-font').value = siteSettings.font;
+            document.getElementById('set-movie-tab').value = siteSettings.movieTabName; document.getElementById('set-movie-btn-text').value = siteSettings.movieBtnText;
+            document.getElementById('set-movie-color').value = siteSettings.movieColor; document.getElementById('set-serial-tab').value = siteSettings.serialTabName;
+            document.getElementById('set-serial-btn-text').value = siteSettings.serialBtnText; document.getElementById('set-ep-btn-text').value = siteSettings.epBtnText;
+            document.getElementById('set-serial-color').value = siteSettings.serialColor; document.getElementById('set-color-primary').value = siteSettings.colorPrimary;
+            document.getElementById('set-color-bg').value = siteSettings.colorBg; document.getElementById('set-color-surface').value = siteSettings.colorSurface;
+            document.getElementById('set-bg-image').value = siteSettings.bgImage; document.getElementById('set-show-search').checked = siteSettings.showSearch;
+            document.getElementById('set-show-timer').checked = siteSettings.showTimer; document.getElementById('set-timer-title').value = siteSettings.timerTitle;
+            document.getElementById('set-show-comments').checked = siteSettings.showComments; document.getElementById('set-comment-title').value = siteSettings.commentTitle;
+        }
+
+        async function saveSiteSettings() {
+            siteSettings = {
+                title: document.getElementById('set-title').value, subtitle: document.getElementById('set-sub').value,
+                footer: document.getElementById('set-footer').value, font: document.getElementById('set-font').value,
+                movieTabName: document.getElementById('set-movie-tab').value, movieBtnText: document.getElementById('set-movie-btn-text').value,
+                movieColor: document.getElementById('set-movie-color').value, serialTabName: document.getElementById('set-serial-tab').value,
+                serialBtnText: document.getElementById('set-serial-btn-text').value, epBtnText: document.getElementById('set-ep-btn-text').value,
+                serialColor: document.getElementById('set-serial-color').value, colorPrimary: document.getElementById('set-color-primary').value,
+                colorBg: document.getElementById('set-color-bg').value, colorSurface: document.getElementById('set-color-surface').value,
+                bgImage: document.getElementById('set-bg-image').value, showSearch: document.getElementById('set-show-search').checked,
+                showTimer: document.getElementById('set-show-timer').checked, timerTitle: document.getElementById('set-timer-title').value,
+                showComments: document.getElementById('set-show-comments').checked, commentTitle: document.getElementById('set-comment-title').value
+            };
+            applySettingsToUI();
+            await saveToCloud();
+            alert("Settings Saved to Cloud!");
+        }
+
+        // --- CONTENT MANAGEMENT ---
+        function switchUserTab(type) {
+            currentMode = type;
+            document.getElementById('tab-movie-user').classList.toggle('active', type === 'Movie');
+            document.getElementById('tab-serial-user').classList.toggle('active', type === 'Serial');
+            document.getElementById('user-search').value = ''; 
+            renderUserGrid();
+        }
+
+        function switchAdminContentTab(type) {
+            adminContentMode = type;
+            document.getElementById('admin-subtab-movie').classList.toggle('active', type === 'Movie');
+            document.getElementById('admin-subtab-serial').classList.toggle('active', type === 'Serial');
+            renderAdminGrid();
+        }
+
+        function toggleLinkInput() { document.getElementById('movie-link').style.display = document.getElementById('movie-type').value === 'Serial' ? 'none' : 'block'; }
+        
+        async function savePost() {
+            const type = document.getElementById('movie-type').value, title = document.getElementById('movie-title').value;
+            const poster = document.getElementById('movie-poster').value || 'https://via.placeholder.com/300x450?text=No+Poster';
+            const link = document.getElementById('movie-link').value;
+            if (!title) return alert("Title required!");
+            
+            posts.unshift({ id: Date.now(), title, type, poster, link: link || '', episodes: [] });
+            await saveToCloud();
+            
+            document.getElementById('movie-title').value = ''; document.getElementById('movie-poster').value = ''; document.getElementById('movie-link').value = '';
+            switchAdminContentTab(type);
+        }
+
+        async function deletePost(id) { 
+            if(confirm("Delete this?")) { 
+                posts = posts.filter(p => p.id !== id); 
+                await saveToCloud();
+                renderAdminGrid(); 
+            } 
+        }
+
+        // --- EPISODES ---
+        function openEpisodesAdmin(postId) {
+            const p = posts.find(x => x.id === postId);
+            let eps = (p.episodes||[]).map(ep => `<div style="background:var(--bg); padding:1rem; margin-bottom:0.5rem; border-radius:8px; display:flex; justify-content:space-between;"><span>${ep.num}</span><button class="btn btn-danger" style="width:auto; padding:0.4rem;" onclick="deleteEp(${p.id}, ${ep.id})"><i class="fas fa-trash"></i></button></div>`).join('');
+            document.getElementById('episodes-content').innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:1rem;"><h2>Episodes: ${p.title}</h2><button class="btn btn-outline" style="width:auto; padding:0.5rem;" onclick="document.getElementById('episodes-modal').classList.add('hidden')">Close</button></div><div style="margin-bottom:1rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;"><input type="text" id="new-ep-num" placeholder="Episode Name"><input type="url" id="new-ep-link" placeholder="Link"><button class="btn btn-main" onclick="addEp(${p.id})">Add</button></div>${eps || '<p>No episodes.</p>'}`;
+            document.getElementById('episodes-modal').classList.remove('hidden');
+        }
+        function openEpisodesUser(postId) {
+            const p = posts.find(x => x.id === postId);
+            let eps = (p.episodes||[]).map(ep => `<div style="background:var(--bg); padding:1rem; margin-bottom:0.5rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;"><span>${ep.num}</span><a href="${ep.link}" target="_blank" class="btn-card-action" style="background:var(--serial-btn); width:auto; padding:0.5rem; margin:0;"><i class="fas fa-download"></i> ${siteSettings.epBtnText}</a></div>`).join('');
+            document.getElementById('episodes-content').innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:1rem; align-items:center;"><h2>${p.title}</h2><button class="btn btn-outline" style="width:auto; padding:0.5rem;" onclick="document.getElementById('episodes-modal').classList.add('hidden')"><i class="fas fa-times"></i></button></div>${eps || '<p>Coming soon...</p>'}`;
+            document.getElementById('episodes-modal').classList.remove('hidden');
+        }
+        async function addEp(id) { 
+            const n=document.getElementById('new-ep-num').value, l=document.getElementById('new-ep-link').value; 
+            if(n&&l) { 
+                const p = posts.find(p=>p.id===id); 
+                if(!p.episodes) p.episodes=[]; 
+                p.episodes.push({id:Date.now(),num:n,link:l}); 
+                await saveToCloud();
+                openEpisodesAdmin(id); 
+            } 
+        }
+        async function deleteEp(pid, eid) { 
+            const p = posts.find(p=>p.id===pid); 
+            p.episodes = p.episodes.filter(e=>e.id!==eid); 
+            await saveToCloud();
+            openEpisodesAdmin(pid); 
+        }
+
+        // --- RENDER CARDS ---
+        function renderAdminGrid() {
+            let filtered = posts.filter(p => p.type === adminContentMode);
+            document.getElementById('admin-grid-dynamic').innerHTML = filtered.map(post => {
+                const btnColor = post.type === 'Serial' ? 'var(--serial-btn)' : 'var(--movie-btn)';
+                return `<div class="card"><div class="card-badge" style="background:${btnColor}">${post.type.toUpperCase()}</div><div class="img-container"><img src="${post.poster}"><div class="card-overlay"></div></div><div class="card-body"><h3 class="card-title">${post.title}</h3>${post.type === 'Serial' ? `<button class="btn-card-action" style="background:${btnColor}; margin-bottom:5px;" onclick="openEpisodesAdmin(${post.id})">Manage Episodes</button>` : `<a href="${post.link}" target="_blank" class="btn-card-action" style="background:${btnColor}; margin-bottom:5px;">Test Link</a>`}<button class="btn-card-action btn-danger" onclick="deletePost(${post.id})"><i class="fas fa-trash"></i> Delete</button></div></div>`;
+            }).join('') || `<p style="color:gray;">No ${adminContentMode}s uploaded yet.</p>`;
+        }
+
+        function filterUserContent() { renderUserGrid(document.getElementById('user-search').value.toLowerCase()); }
+
+        function renderUserGrid(searchQuery = "") {
+            let filtered = posts.filter(p => p.type === currentMode);
+            if (searchQuery) filtered = filtered.filter(p => p.title.toLowerCase().includes(searchQuery));
+            document.getElementById('user-grid').innerHTML = filtered.map(post => {
+                const btnColor = post.type === 'Serial' ? 'var(--serial-btn)' : 'var(--movie-btn)';
+                const btnText = post.type === 'Serial' ? siteSettings.serialBtnText : siteSettings.movieBtnText;
+                const action = post.type === 'Serial' ? `onclick="openEpisodesUser(${post.id})"` : `href="${post.link}" target="_blank"`;
+                const tag = post.type === 'Serial' ? 'button' : 'a';
+                return `<div class="card"><div class="card-badge" style="background:${btnColor}">${post.type.toUpperCase()}</div><div class="img-container"><img src="${post.poster}" loading="lazy"><div class="card-overlay"></div></div><div class="card-body"><h3 class="card-title">${post.title}</h3><${tag} ${action} class="btn-card-action" style="background:${btnColor};">${btnText}</${tag}></div></div>`;
+            }).join('') || `<p style="color:gray; width:100%; text-align:center;">Nothing found.</p>`;
+        }
+
+        // --- ROBO CHAT ---
+        function toggleBotCloud() {
+            const cloud = document.getElementById('bot-speech-cloud');
+            if (cloud.style.display === 'none' || cloud.classList.contains('hidden')) {
+                cloud.style.display = 'flex'; cloud.classList.remove('hidden'); renderUserChat();
+            } else cloud.style.display = 'none';
+        }
+
+        async function submitRequest() { 
+            const t = document.getElementById('user-request').value.trim(); 
+            if(t) { 
+                chatHistory.push({id:Date.now(), sender:'user', text:t}); 
+                await saveToCloud();
+                document.getElementById('user-request').value=''; 
+                renderUserChat();
+            } 
+        }
+        
+        async function submitAdminReply() {
+            const t = document.getElementById('admin-reply-input').value.trim(); 
+            if(t) { 
+                chatHistory.push({id:Date.now(), sender:'admin', text:t}); 
+                await saveToCloud();
+                document.getElementById('admin-reply-input').value=''; 
+                renderAdminChat();
+            } 
+        }
+        
+        async function clearRequests() { 
+            if(confirm("Clear Chat History?")){ 
+                chatHistory=[]; 
+                await saveToCloud();
+                renderAdminChat();
+            } 
+        }
+        
+        function renderUserChat() { 
+            const body = document.getElementById('user-chat-body');
+            let html = `<div class="chat-bubble bot-msg">Hi! Tell me what movie or serial you want, and I will forward it to the Admin!</div>`;
+            html += chatHistory.map(msg => `<div class="chat-bubble ${msg.sender === 'user' ? 'user-msg' : 'admin-msg'}">${msg.text}</div>`).join('');
+            body.innerHTML = html; body.scrollTop = body.scrollHeight; 
+        }
+        
+        function renderAdminChat() { 
+            const body = document.getElementById('admin-chat-body');
+            let html = `<div class="chat-bubble bot-msg" style="border-radius: 12px;">Master Admin, here is the chat log. Type below to send a message back.</div>`;
+            html += chatHistory.map(msg => `<div class="chat-bubble ${msg.sender === 'admin' ? 'user-msg' : 'bot-msg'}"><b>${msg.sender === 'admin' ? 'You' : 'Friend'}:</b><br>${msg.text}</div>`).join('');
+            html += `<div class="cloud-input" style="border: none; padding: 1rem 0 0 0;"><input type="text" id="admin-reply-input" placeholder="Type reply to friend..." style="margin:0;"><button class="btn btn-main" onclick="submitAdminReply()"><i class="fas fa-paper-plane"></i></button></div>`;
+            body.innerHTML = html; body.scrollTop = body.scrollHeight;
+        }
+        
+        // --- 4:00 AM TIMER ---
+        function start4AMTimer() {
+            let targetDate = localStorage.getItem('jsonbin_timer_4am');
+            if (!targetDate || Date.now() > parseInt(targetDate)) { 
+                let next = new Date(); next.setHours(4, 0, 0, 0); 
+                if (Date.now() > next.getTime()) next.setDate(next.getDate() + 1); 
+                next.setDate(next.getDate() + 2); 
+                targetDate = next.getTime(); localStorage.setItem('jsonbin_timer_4am', targetDate); 
+            }
+            setInterval(() => {
+                let dist = targetDate - Date.now(); 
+                if (dist < 0) {
+                    let renew = new Date(); renew.setHours(4, 0, 0, 0); renew.setDate(renew.getDate() + 3);
+                    targetDate = renew.getTime(); localStorage.setItem('jsonbin_timer_4am', targetDate);
+                }
+                document.getElementById('countdown-text').innerText = 
+                    `${Math.floor(dist/(1000*60*60*24))}d ` +
+                    `${Math.floor((dist%(1000*60*60*24))/(1000*60*60)).toString().padStart(2, '0')}h ` +
+                    `${Math.floor((dist%(1000*60*60))/(1000*60)).toString().padStart(2, '0')}m ` +
+                    `${Math.floor((dist%(1000*60))/1000).toString().padStart(2, '0')}s`;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
